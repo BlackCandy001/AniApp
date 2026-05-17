@@ -39,6 +39,7 @@ migrate_working_dir/
 *.aab
 node_modules/
 **/node_modules/
+/AniApp DOC/
 # Symbolication related
 app.*.symbols
 
