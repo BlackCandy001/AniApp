@@ -1,5 +1,6 @@
 class WatchlistModel {
   final int? id;
+  final int userId;       // ID của người dùng sở hữu bản ghi này (0 = chưa đăng nhập)
   final int malId;
   final String title;
   final String? titleJapanese;
@@ -14,6 +15,7 @@ class WatchlistModel {
 
   WatchlistModel({
     this.id,
+    this.userId = 0,
     required this.malId,
     required this.title,
     this.titleJapanese,
@@ -30,6 +32,7 @@ class WatchlistModel {
   factory WatchlistModel.fromMap(Map<String, dynamic> map) {
     return WatchlistModel(
       id: map['id'],
+      userId: map['user_id'] ?? 0,
       malId: map['mal_id'],
       title: map['title'],
       titleJapanese: map['title_japanese'],
@@ -47,6 +50,7 @@ class WatchlistModel {
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
+      'user_id': userId,
       'mal_id': malId,
       'title': title,
       'title_japanese': titleJapanese,

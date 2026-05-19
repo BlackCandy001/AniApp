@@ -33,7 +33,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -56,6 +56,57 @@ class DatabaseHelper {
         created_at TEXT NOT NULL
       )
       ''');
+    }
+    if (oldVersion < 4) {
+      // Tạo lại bảng watchlist với user_id và UNIQUE(mal_id, user_id)
+      await db.execute('''
+        CREATE TABLE watchlist_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL DEFAULT 0,
+          mal_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          title_japanese TEXT,
+          poster_url TEXT NOT NULL,
+          status TEXT NOT NULL,
+          episodes_total INTEGER,
+          episodes_watched INTEGER NOT NULL DEFAULT 0,
+          score_user REAL,
+          genres TEXT,
+          added_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          UNIQUE(mal_id, user_id)
+        )
+      ''');
+      // Copy dữ liệu cũ sang bảng mới, gán user_id = 0 (không xác định)
+      await db.execute('''
+        INSERT INTO watchlist_new
+          (user_id, mal_id, title, title_japanese, poster_url, status,
+           episodes_total, episodes_watched, score_user, genres, added_at, updated_at)
+        SELECT 0, mal_id, title, title_japanese, poster_url, status,
+           episodes_total, episodes_watched, score_user, genres, added_at, updated_at
+        FROM watchlist
+      ''');
+      await db.execute('DROP TABLE watchlist');
+      await db.execute('ALTER TABLE watchlist_new RENAME TO watchlist');
+    }
+    if (oldVersion < 5) {
+      // Recreate notes without foreign key constraint
+      await db.execute('CREATE TABLE IF NOT EXISTS notes_new (id INTEGER PRIMARY KEY AUTOINCREMENT, mal_id INTEGER NOT NULL, content TEXT NOT NULL, created_at TEXT NOT NULL)');
+      // Copy existing notes if table exists
+      try {
+        await db.execute('INSERT INTO notes_new (id, mal_id, content, created_at) SELECT id, mal_id, content, created_at FROM notes');
+      } catch (_) {}
+      await db.execute('DROP TABLE IF EXISTS notes');
+      await db.execute('ALTER TABLE notes_new RENAME TO notes');
+
+      // Recreate watch_history without foreign key constraint
+      await db.execute('CREATE TABLE IF NOT EXISTS watch_history_new (id INTEGER PRIMARY KEY AUTOINCREMENT, mal_id INTEGER NOT NULL, action TEXT NOT NULL, action_at TEXT NOT NULL)');
+      // Copy existing watch_history if table exists
+      try {
+        await db.execute('INSERT INTO watch_history_new (id, mal_id, action, action_at) SELECT id, mal_id, action, action_at FROM watch_history');
+      } catch (_) {}
+      await db.execute('DROP TABLE IF EXISTS watch_history');
+      await db.execute('ALTER TABLE watch_history_new RENAME TO watch_history');
     }
   }
 
@@ -85,7 +136,8 @@ CREATE TABLE users (
     await db.execute('''
 CREATE TABLE watchlist (
   id $idType,
-  mal_id $integerType UNIQUE,
+  user_id $integerType DEFAULT 0,
+  mal_id $integerType,
   title $textType,
   title_japanese $textNullableType,
   poster_url $textType,
@@ -95,7 +147,8 @@ CREATE TABLE watchlist (
   score_user $realNullableType,
   genres $textNullableType,
   added_at $textType,
-  updated_at $textType
+  updated_at $textType,
+  UNIQUE(mal_id, user_id)
 )
 ''');
 
@@ -104,8 +157,7 @@ CREATE TABLE notes (
   id $idType,
   mal_id $integerType,
   content $textType,
-  created_at $textType,
-  FOREIGN KEY (mal_id) REFERENCES watchlist (mal_id) ON DELETE CASCADE
+  created_at $textType
 )
 ''');
 
@@ -114,8 +166,7 @@ CREATE TABLE watch_history (
   id $idType,
   mal_id $integerType,
   action $textType,
-  action_at $textType,
-  FOREIGN KEY (mal_id) REFERENCES watchlist (mal_id) ON DELETE CASCADE
+  action_at $textType
 )
 ''');
   }

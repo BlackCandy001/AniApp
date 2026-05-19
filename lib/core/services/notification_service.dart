@@ -12,7 +12,7 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
-    // Chỉ khởi tạo trên các nền tảng được hỗ trợ (không cần thiết trên Windows desktop)
+    // Chỉ khởi tạo trên các nền tảng được hỗ trợ
     if (!Platform.isAndroid && !Platform.isIOS && !Platform.isMacOS) return;
 
     const AndroidInitializationSettings androidSettings =
@@ -32,6 +32,14 @@ class NotificationService {
         debugPrint('Notification clicked: ${response.payload}');
       },
     );
+
+    // Xin quyền trên Android 13+
+    if (Platform.isAndroid) {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    }
   }
 
   Future<void> showNotification({
@@ -40,9 +48,14 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
-    // Không làm gì nếu không phải nền tảng di động/macOS
+    // Không làm gì nếu không phải nền tảng di động/macOS, chuyển sang giả lập log
     if (!Platform.isAndroid && !Platform.isIOS && !Platform.isMacOS) {
-      debugPrint('🔔 [Thông báo giả lập] $title: $body');
+      if (kDebugMode) {
+        debugPrint('\n==================================');
+        debugPrint('🔔 [THÔNG BÁO] $title');
+        debugPrint('📝 $body');
+        debugPrint('==================================\n');
+      }
       return;
     }
 

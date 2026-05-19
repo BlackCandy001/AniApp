@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/local/database_helper.dart';
 import '../../data/api/jikan_api_service.dart';
 import '../../data/models/watchlist_model.dart';
@@ -27,11 +29,15 @@ class TrackingService {
     try {
       final db = await DatabaseHelper.instance.database;
 
-      // Chỉ kiểm tra phim đang xem hoặc đang theo dõi
+      // Lấy user_id hiện tại từ SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('logged_in_user_id') ?? 0;
+
+      // Chỉ kiểm tra phim đang xem hoặc đang theo dõi của người dùng hiện tại
       final maps = await db.query(
         'watchlist',
-        where: 'status IN (?, ?)',
-        whereArgs: ['watching', 'following'],
+        where: 'status IN (?, ?) AND user_id = ?',
+        whereArgs: ['watching', 'following', userId],
       );
 
       if (maps.isEmpty) return 0;
@@ -42,24 +48,29 @@ class TrackingService {
         try {
           // Gọi API để lấy thông tin mới nhất
           final latestAnime = await _apiService.getAnimeDetails(item.malId);
+          
+          // Dùng API đúng để đếm số tập đã phát thực tế
+          final airedCount = await _apiService.getAiredEpisodesCount(item.malId);
 
           bool hasUpdate = false;
           String notifyBody = '';
 
-          // Kiểm tra tập mới
-          final latestEpisodes = latestAnime.episodes ?? 0;
-          final savedEpisodes = item.episodesTotal ?? 0;
-          if (latestEpisodes > savedEpisodes && latestEpisodes > 0) {
-            hasUpdate = true;
-            notifyBody = 'Đã có $latestEpisodes tập! (Bạn đã lưu: $savedEpisodes tập)';
-          }
+          // Đọc ngôn ngữ hiện tại từ SharedPreferences
+          final prefs = await SharedPreferences.getInstance();
+          final lang = prefs.getString('app_language') ?? 'en';
 
-          // Kiểm tra nếu phim bắt đầu chiếu
-          if (!hasUpdate &&
-              latestAnime.status == 'Currently Airing' &&
-              savedEpisodes == 0) {
+          // Kiểm tra tập mới
+          final savedEpisodes = item.episodesTotal ?? 0;
+          if (airedCount > savedEpisodes && airedCount > 0) {
             hasUpdate = true;
-            notifyBody = 'Bộ phim đã bắt đầu phát sóng!';
+            
+            if (savedEpisodes == 0 && airedCount == 1) {
+              notifyBody = AppLocalizations.get(lang, 'notify_episode_started');
+            } else {
+              notifyBody = AppLocalizations.get(lang, 'notify_episode_new')
+                  .replaceFirst('{aired}', '$airedCount')
+                  .replaceFirst('{saved}', '$savedEpisodes');
+            }
           }
 
           if (hasUpdate) {
@@ -72,15 +83,15 @@ class TrackingService {
               body: notifyBody,
             );
 
-            // Cập nhật số tập trong DB để không thông báo lại
+            // Cập nhật số tập đã phát trong DB để không thông báo lại
             await db.update(
               'watchlist',
               {
-                'episodes_total': latestEpisodes,
+                'episodes_total': airedCount,
                 'updated_at': DateTime.now().toIso8601String(),
               },
-              where: 'mal_id = ?',
-              whereArgs: [item.malId],
+              where: 'mal_id = ? AND user_id = ?',
+              whereArgs: [item.malId, userId],
             );
           }
 

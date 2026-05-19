@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../../../auth/presentation/auth_providers.dart';
 import '../../../../core/localization/language_provider.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../data/models/user_model.dart';
+
+final lostAvatarProvider = StateProvider<XFile?>((ref) => null);
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -40,6 +45,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _emailController.text = user.email;
       _selectedAvatar = user.avatarPath;
     }
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final rescuedFile = ref.read(lostAvatarProvider);
+      if (rescuedFile != null) {
+        _processAndSaveImage(rescuedFile);
+        ref.read(lostAvatarProvider.notifier).state = null;
+      }
+    });
   }
 
   @override
@@ -51,31 +64,62 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _processAndSaveImage(XFile image) async {
+    final currentLang = ref.read(languageProvider);
+    try {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.get(currentLang, 'processing_image')), duration: const Duration(seconds: 1)),
+        );
+      }
+
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}${p.extension(image.path)}';
+      final savedImagePath = '${directory.path}/$fileName';
+      
+      final savedImage = await File(image.path).copy(savedImagePath);
+
+      setState(() {
+        _selectedAvatar = savedImage.path;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.get(currentLang, 'update_avatar_success')), backgroundColor: Colors.green));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${AppLocalizations.get(currentLang, 'process_image_error')} $e'), backgroundColor: Colors.redAccent));
+      }
+    }
+  }
+
   Future<void> _pickImage() async {
+    final currentLang = ref.read(languageProvider);
     try {
       final ImagePicker picker = ImagePicker();
-      // Thêm nén ảnh nhẹ để tránh tốn dung lượng và tương thích tốt hơn
+      // Khôi phục nén ảnh nhẹ để tránh lỗi render hình quá bự
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 500,
-        maxHeight: 500,
+        maxWidth: 800,
+        maxHeight: 800,
         imageQuality: 85,
       );
+      
       if (image != null) {
-        setState(() {
-          _selectedAvatar = image.path;
-        });
-        // Tự động lưu avatar mới vào SQLite ngay lập tức để phòng tránh Android Activity Recreation
-        await ref.read(authProvider.notifier).updateProfileWithPasswordCheck(
-          newAvatarPath: image.path,
-        );
+        await _processAndSaveImage(image);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.get(currentLang, 'no_image_selected'))),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Lỗi chọn ảnh: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Không thể truy cập thư viện ảnh: $e'),
+            content: Text('${AppLocalizations.get(currentLang, 'gallery_error')} $e'),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -122,6 +166,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     final currentLang = ref.watch(languageProvider);
     
+    // Khắc phục lỗi trống field khi app vừa khởi động lại (Activity Recreation)
+    ref.listen<UserModel?>(authProvider, (previous, next) {
+      if (next != null && previous == null) {
+        if (_usernameController.text.isEmpty) {
+          _usernameController.text = next.username;
+        }
+        if (_emailController.text.isEmpty) {
+          _emailController.text = next.email;
+        }
+        if (_selectedAvatar == null || _selectedAvatar!.isEmpty) {
+          setState(() {
+            _selectedAvatar = next.avatarPath;
+          });
+        }
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.get(currentLang, 'edit_profile'), style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -178,13 +239,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 children: _availableAvatars.map((avatar) {
                   final isSelected = avatar == _selectedAvatar;
                   return GestureDetector(
-                    onTap: () async {
+                    onTap: () {
                       setState(() {
                         _selectedAvatar = avatar;
                       });
-                      await ref.read(authProvider.notifier).updateProfileWithPasswordCheck(
-                        newAvatarPath: avatar,
-                      );
                     },
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),

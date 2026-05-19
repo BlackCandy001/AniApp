@@ -4,6 +4,11 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/localization/language_provider.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/services/tracking_service.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
+import '../../../profile/presentation/screens/edit_profile_screen.dart';
 import 'home_screen.dart';
 import '../../../search/presentation/screens/search_screen.dart';
 import '../../../mylist/presentation/screens/mylist_screen.dart';
@@ -16,7 +21,7 @@ class MainScreen extends ConsumerStatefulWidget {
   ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends ConsumerState<MainScreen> {
+class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   bool _isOffline = false;
   
@@ -30,7 +35,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Tự động kiểm tra cập nhật khi mới mở app
+    TrackingService().checkForUpdates();
     _loadTabPreference();
+    
+    if (Platform.isAndroid) {
+      _checkLostAvatarData();
+    }
+    
     Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
       if (mounted) {
         setState(() {
@@ -45,6 +59,20 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         });
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Tự động kiểm tra cập nhật khi app quay lại hoạt động từ ngầm
+      TrackingService().checkForUpdates();
+    }
   }
 
   Future<void> _loadTabPreference() async {
@@ -66,6 +94,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('active_tab_index', index);
     } catch (_) {}
+  }
+
+  Future<void> _checkLostAvatarData() async {
+    try {
+      final picker = ImagePicker();
+      final response = await picker.retrieveLostData();
+      if (!response.isEmpty && response.file != null) {
+        ref.read(lostAvatarProvider.notifier).state = response.file;
+        if (mounted) {
+          context.push('/edit-profile');
+        }
+      }
+    } catch (e) {
+      debugPrint('Lỗi retrieveLostData tại MainScreen: $e');
+    }
   }
 
   @override

@@ -89,10 +89,23 @@ class SettingsScreen extends ConsumerWidget {
                   title: Text(AppLocalizations.get(currentLang, 'export_data')),
                   subtitle: Text(AppLocalizations.get(currentLang, 'export_data_desc')),
                   onTap: () async {
-                    final jsonStr = await ref.read(watchlistProvider.notifier).exportData();
-                    await Clipboard.setData(ClipboardData(text: jsonStr));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.get(currentLang, 'copied_clipboard'))));
+                    try {
+                      final jsonStr = await ref.read(watchlistProvider.notifier).exportData();
+                      await Clipboard.setData(ClipboardData(text: jsonStr));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(AppLocalizations.get(currentLang, 'copied_clipboard'))),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${AppLocalizations.get(currentLang, 'error_occurred')} $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     }
                   },
                 ),

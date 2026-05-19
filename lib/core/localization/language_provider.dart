@@ -8,7 +8,7 @@ final languageProvider = StateNotifierProvider<LanguageNotifier, String>((ref) {
 class LanguageNotifier extends StateNotifier<String> {
   static const _key = 'app_language';
   
-  LanguageNotifier() : super('vi') {
+  LanguageNotifier() : super('en') {
     _loadLanguage();
   }
 

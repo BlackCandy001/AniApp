@@ -6,6 +6,7 @@ import '../../../../data/models/watchlist_model.dart';
 import '../../../mylist/presentation/mylist_providers.dart';
 import '../../../../core/localization/language_provider.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../data/local/database_helper.dart';
 
 class UpdateWatchlistBottomSheet extends ConsumerStatefulWidget {
   final AnimeModel anime;
@@ -27,7 +28,67 @@ class _UpdateWatchlistBottomSheetState extends ConsumerState<UpdateWatchlistBott
   void initState() {
     super.initState();
     _episodesController.text = '0';
-    // Ở bản nâng cấp, sẽ tìm dữ liệu cũ trong watchlistProvider để fill vào đây
+    _loadExistingData();
+  }
+
+  Future<void> _loadExistingData() async {
+    // 1. Lấy dữ liệu cũ trong watchlistProvider để hiển thị lên form
+    final watchlistState = ref.read(watchlistProvider);
+    watchlistState.whenOrNull(
+      data: (list) {
+        WatchlistModel? existing;
+        for (final item in list) {
+          if (item.malId == widget.anime.malId) {
+            existing = item;
+            break;
+          }
+        }
+        if (existing != null) {
+          final ext = existing;
+          setState(() {
+            _status = ext.status;
+            _score = ext.scoreUser ?? 0;
+            _episodesController.text = ext.episodesWatched.toString();
+          });
+        }
+      }
+    );
+
+    // 2. Truy vấn ghi chú cá nhân từ bảng 'notes'
+    try {
+      final db = await DatabaseHelper.instance.database;
+      final maps = await db.query(
+        'notes',
+        where: 'mal_id = ?',
+        whereArgs: [widget.anime.malId],
+        limit: 1,
+      );
+      if (maps.isNotEmpty && mounted) {
+        setState(() {
+          _noteController.text = maps.first['content'] as String;
+        });
+      }
+    } catch (e) {
+      debugPrint('Lỗi tải ghi chú: $e');
+    }
+  }
+
+  Future<void> _saveNote(int malId, String noteContent) async {
+    try {
+      final db = await DatabaseHelper.instance.database;
+      // Xóa ghi chú cũ nếu có
+      await db.delete('notes', where: 'mal_id = ?', whereArgs: [malId]);
+      // Nếu có nội dung mới thì chèn vào
+      if (noteContent.isNotEmpty) {
+        await db.insert('notes', {
+          'mal_id': malId,
+          'content': noteContent,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      }
+    } catch (e) {
+      debugPrint('Lỗi lưu ghi chú: $e');
+    }
   }
 
   @override
@@ -54,7 +115,7 @@ class _UpdateWatchlistBottomSheetState extends ConsumerState<UpdateWatchlistBott
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-              initialValue: _status,
+                value: _status,
                 decoration: InputDecoration(labelText: AppLocalizations.get(currentLang, 'status_label'), border: const OutlineInputBorder()),
                 items: [
                   DropdownMenuItem(value: 'watching', child: Text(AppLocalizations.get(currentLang, 'status_watching'))),
@@ -84,7 +145,7 @@ class _UpdateWatchlistBottomSheetState extends ConsumerState<UpdateWatchlistBott
               Center(
                 child: RatingBar.builder(
                   initialRating: _score,
-                  minRating: 1,
+                  minRating: 0,
                   maxRating: 10,
                   direction: Axis.horizontal,
                   allowHalfRating: true,
@@ -113,11 +174,6 @@ class _UpdateWatchlistBottomSheetState extends ConsumerState<UpdateWatchlistBott
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    if (_score == 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn điểm đánh giá (từ 1 đến 10)')));
-                      return;
-                    }
-                    
                     final watchItem = WatchlistModel(
                       malId: widget.anime.malId,
                       title: widget.anime.title,
@@ -125,12 +181,14 @@ class _UpdateWatchlistBottomSheetState extends ConsumerState<UpdateWatchlistBott
                       status: _status,
                       episodesTotal: widget.anime.episodes,
                       episodesWatched: int.parse(_episodesController.text),
-                      scoreUser: _score,
+                      scoreUser: _score == 0 ? null : _score, // Lưu null nếu không chấm điểm
                       addedAt: DateTime.now().toIso8601String(),
                       updatedAt: DateTime.now().toIso8601String(),
                     );
                     
                     ref.read(watchlistProvider.notifier).addOrUpdate(watchItem);
+                    _saveNote(widget.anime.malId, _noteController.text.trim());
+                    
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.get(currentLang, 'saved_success'))));
                   }

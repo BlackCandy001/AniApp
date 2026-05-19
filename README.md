@@ -1,106 +1,164 @@
-# AnimeTracker - Quản lý Danh sách Anime Cá nhân
+# AniApp — Ứng dụng Quản lý Anime Cá nhân
 
-AnimeTracker là ứng dụng di động được xây dựng bằng **Flutter**, kết hợp kiến trúc **Clean Architecture** và **Riverpod**. Ứng dụng giúp người dùng khám phá, tìm kiếm và quản lý danh sách anime/phim cá nhân một cách sinh động, tiện lợi và hỗ trợ sử dụng ngay cả khi không có kết nối mạng (Offline Mode).
+AniApp là ứng dụng di động xây dựng bằng **Flutter**, kết hợp kiến trúc **Feature-First** và **Riverpod**. Ứng dụng giúp người dùng khám phá, tìm kiếm, theo dõi và nhận thông báo tập mới của anime một cách tự động, hỗ trợ đa ngôn ngữ và hoạt động cả khi offline.
 
 ---
 
 ## 🛠 Công nghệ sử dụng
-- **Framework:** Flutter (Dart)
-- **State Management:** `flutter_riverpod`
-- **Kiến trúc:** Clean Architecture (Core, Features, Data, Domain)
-- **Routing:** `go_router`
-- **Network & API:** `http` kết nối với **Jikan API v4** (Cơ sở dữ liệu MyAnimeList)
-- **Database (Local Storage):** `sqflite` (Hỗ trợ SQLite trên Android/iOS) và `sqflite_common_ffi` (Hỗ trợ SQLite trên Desktop/Windows).
-- **UI/UX & Hoạt ảnh:** Material 3, Hero Animations, SliverAppBar, Hiệu ứng Hover/Scale động trên Desktop/Web.
-- **Tiện ích:** `cached_network_image`, `fl_chart`, `connectivity_plus`, `shared_preferences`, `flutter_rating_bar`
-- **Tích hợp mở rộng:** `translator` (Google Translate API), `youtube_player_iframe` (Trình phát video nhúng).
+
+| Hạng mục | Công nghệ |
+|---|---|
+| **Framework** | Flutter (Dart SDK ^3.11.5) |
+| **State Management** | `flutter_riverpod ^2.5.1` |
+| **Kiến trúc** | Feature-First + Clean Architecture |
+| **Routing** | `go_router ^17.2.3` |
+| **API** | Jikan API v4 (`https://api.jikan.moe/v4`) |
+| **Database cục bộ** | `sqflite ^2.4.2` (Android/iOS), `sqflite_common_ffi` (Desktop) |
+| **Thông báo** | `flutter_local_notifications 17.2.4` |
+| **Background Task** | `workmanager ^0.5.2` (WorkManager — Android) |
+| **Chọn ảnh** | `image_picker ^1.2.2` |
+| **Lưu trữ ảnh** | `path_provider ^2.1.5` |
+| **Cache ảnh** | `cached_network_image ^3.4.1` |
+| **Biểu đồ** | `fl_chart ^1.2.0` |
+| **Kết nối mạng** | `connectivity_plus ^7.1.1` |
+| **Lưu cài đặt** | `shared_preferences ^2.5.5` |
+| **Dịch thuật** | `translator ^1.0.4+1` |
+| **Xem trailer** | `url_launcher ^6.3.2` |
 
 ---
 
 ## ✨ Chức năng nổi bật
-1. **Khám phá Anime:** Tự động gọi API lấy danh sách Anime đang chiếu (Seasons Now) và Top Anime hiển thị bằng danh sách trượt ngang.
-2. **Tìm kiếm Nâng cao:** 
-   - Tìm kiếm theo tên với thuật toán **Debounce** (tự động hoãn 500ms chống spam API).
-   - Form Validation chặn từ khóa quá ngắn.
-3. **Giao diện Chi tiết Sinh động:** 
-   - Sử dụng `SliverAppBar` cho ảnh nền tự động thu phóng nghệ thuật.
-   - Hiệu ứng `Hero Animation` giúp poster bay mượt mà giữa các màn hình.
-4. **Quản lý Danh sách Cá nhân (My List):** 
-   - Thêm phim vào danh sách với 5 trạng thái (Đang xem, Đã xem, Dự định, Bỏ dở).
-   - Đánh giá sao (1-10) bằng RatingBar, lưu số tập đã xem, tiến độ xem nhanh (`Quick Progress`).
-   - Thao tác vuốt để xóa (`Swipe-to-delete`) tiện lợi.
-5. **Đa ngôn ngữ & Dịch thuật Tự động (Localization):**
-   - Hỗ trợ dịch Tóm tắt nội dung (Synopsis) và Bối cảnh (Background) từ Tiếng Anh sang Tiếng Việt/Nhật hoàn toàn tự động thông qua Google Translate API.
-6. **Trình chiếu Trailer Tích hợp:** Xem trực tiếp Trailer phim/Video giới thiệu ngay bên trong ứng dụng bằng `youtube_player_iframe`.
-7. **Thống kê Trực quan:** Xem biểu đồ tròn phân tích tỷ lệ phim đã xem thông qua thư viện `fl_chart`.
-8. **Hỗ trợ Offline (Ngoại tuyến):** 
-   - Tự động nhận diện rớt mạng bằng `connectivity_plus` và hiện dải Banner cảnh báo.
-   - Khi mất mạng vẫn xem lại được toàn bộ phim trong "My List". Hình ảnh được lưu Cache.
-9. **Cài đặt Tùy biến & Bảo mật:**
-   - Quản lý giao diện (Dark/Light mode).
-   - Xuất dữ liệu cá nhân ra định dạng JSON hoặc Xóa vĩnh viễn (Clear Data).
-10. **Hỗ trợ Đa nền tảng:** 
-   - Chạy mượt mà trên **Android** (chuẩn Material 3) và **Windows/Desktop** (có tích hợp hiệu ứng di chuột MouseRegion).
+
+1. **🏠 Khám phá Anime:** Danh sách anime đang chiếu, Top Anime, Sắp ra mắt — tải qua Jikan API với phân trang.
+2. **🔍 Tìm kiếm Nâng cao:**
+   - Tìm kiếm theo tên với **Debounce 500ms** (chống spam API).
+   - Lọc theo **thể loại (Genre)**.
+3. **📋 Chi tiết Anime:**
+   - Thông tin đầy đủ: synopsis, trạng thái, lịch phát sóng, rating, nguồn gốc.
+   - Xem **Trailer YouTube** ngay trong app.
+   - **Dịch synopsis** sang Tiếng Việt/Nhật tự động (Google Translate).
+4. **📝 Danh sách Cá nhân (My List):**
+   - Thêm anime với trạng thái: Đang xem / Đã xem / Dự định xem.
+   - Đánh giá sao (1–10), lưu số tập đã xem, ghi chú cá nhân.
+   - Swipe-to-delete tiện lợi.
+   - **Phân tách dữ liệu theo tài khoản** — mỗi người dùng có danh sách riêng biệt.
+5. **🔔 Thông báo Tập Mới (Tự động):**
+   - **Foreground:** Kiểm tra mỗi khi mở app hoặc quay lại từ background.
+   - **Background:** WorkManager tự động kiểm tra mỗi **12 giờ** kể cả khi app đóng hoàn toàn.
+   - Đếm số tập chính xác từ `pagination.items.total` (không bị giới hạn 25 tập/trang).
+   - Nội dung thông báo **tự động theo ngôn ngữ** người dùng đang dùng.
+6. **👤 Hồ sơ & Thống kê:**
+   - Thay đổi avatar từ **thư viện ảnh máy** hoặc avatar có sẵn (hỗ trợ Android 10+, xử lý Activity Recreation).
+   - Biểu đồ tròn phân bổ trạng thái anime.
+   - Tổng số anime, tổng tập đã xem, điểm trung bình.
+7. **⚙️ Cài đặt:**
+   - Dark / Light Mode.
+   - Chọn ngôn ngữ: **Tiếng Việt / English / 日本語** — áp dụng toàn bộ UI và thông báo.
+   - Xuất danh sách sang **JSON** (copy vào Clipboard).
+   - Xóa toàn bộ dữ liệu.
+8. **🌐 Offline Mode:** Banner cảnh báo mất mạng, vẫn xem được My List khi offline.
+9. **🔐 Xác thực cục bộ:** Đăng ký / Đăng nhập bằng email + password lưu SQLite. Có thể dùng không cần tài khoản (chế độ khách).
 
 ---
 
-## 📁 Cấu trúc dự án (Clean Architecture)
-Dự án được phân chia thư mục theo từng tính năng (Feature-first) kết hợp kiến trúc Clean để đảm bảo dễ bảo trì:
+## 📁 Cấu trúc dự án
 
 ```text
 lib/
-├── core/                       # Chứa các thành phần cốt lõi dùng chung
-│   ├── constants/              # Chứa các hằng số cấu hình (vd: api_constants.dart)
-│   ├── routing/                # Quản lý điều hướng màn hình bằng go_router
-│   └── themes/                 # Quản lý Light/Dark Mode (Material 3)
-├── data/                       # Tầng xử lý Dữ liệu (Network & Local)
-│   ├── api/                    # Dịch vụ gọi HTTP request (JikanApiService)
-│   ├── local/                  # SQLite Database Helper quản lý bảng watchlist
-│   └── models/                 # Model chuẩn hóa JSON & Map (AnimeModel)
-├── domain/                     # Tầng Nghiệp vụ (Logic & Entities)
-│   ├── entities/               # Lớp mô hình thuần túy độc lập với Framework
-│   └── repositories/           # Interface định nghĩa giao thức gọi Data
-├── features/                   # Chứa giao diện & logic phân chia theo tính năng
-│   ├── detail/                 # Màn hình Chi tiết + BottomSheet đánh giá
-│   ├── home/                   # Màn hình Trang chủ + Main Navigation Bar
-│   ├── mylist/                 # Màn hình Danh sách + Provider SQLite
-│   ├── search/                 # Màn hình Tìm kiếm + Xử lý Debounce API
-│   └── stats/                  # Màn hình Thống kê + Biểu đồ fl_chart
-└── main.dart                   # Điểm khởi chạy (Entry point) bọc ProviderScope
+├── core/
+│   ├── constants/          # Hằng số cấu hình (API base URL, rate limit)
+│   ├── localization/       # Hệ thống đa ngôn ngữ vi/en/ja (AppLocalizations)
+│   ├── routing/            # Điều hướng GoRouter
+│   ├── services/
+│   │   ├── notification_service.dart   # Push notification nội bộ
+│   │   ├── tracking_service.dart       # Kiểm tra tập mới (foreground)
+│   │   └── background_service.dart     # WorkManager periodic task (background)
+│   └── themes/             # Material 3, Light/Dark Mode
+├── data/
+│   ├── api/                # JikanApiService — HTTP calls
+│   ├── local/              # DatabaseHelper — SQLite (version 4)
+│   └── models/             # AnimeModel, WatchlistModel (có user_id), UserModel
+├── domain/
+│   ├── entities/
+│   └── repositories/
+├── features/
+│   ├── auth/               # Đăng nhập / Đăng ký
+│   ├── detail/             # Chi tiết anime + BottomSheet thêm vào watchlist
+│   ├── home/               # Trang chủ + MainScreen (điều hướng chính)
+│   ├── mylist/             # Danh sách cá nhân (lọc theo user_id)
+│   ├── profile/            # Hồ sơ + sửa avatar
+│   ├── search/             # Tìm kiếm
+│   ├── settings/           # Cài đặt
+│   └── stats/              # Thống kê biểu đồ
+└── main.dart               # Entry point — khởi tạo Notification + Background task
 ```
 
 ---
 
-## ⚙️ Cách hoạt động
+## 🗄 Cơ sở dữ liệu (SQLite — version 4)
 
-1. **State Management (Riverpod):** 
-   - Dữ liệu API (Trang chủ, Tìm kiếm) được gọi qua `FutureProvider`. 
-   - Dữ liệu local (SQLite) được quản lý qua `StateNotifierProvider`. Giao diện màn hình "My List" và "Stats" tự động lắng nghe (Reactive) và thay đổi ngay khi database SQLite có cập nhật (thêm/sửa/xóa anime).
-2. **Cơ chế Debounce Tìm kiếm:** Thay vì gọi API liên tục mỗi khi gõ 1 chữ, thuật toán trong `search_providers.dart` sẽ "đợi" 500ms sau khi người dùng ngừng gõ phím mới tiến hành gửi Request. Điều này giúp bảo vệ ứng dụng không bị hệ thống Jikan API chặn (vì API này có Rate Limit: 3 request/giây).
-3. **Cơ sở dữ liệu Cục bộ (Local Database):** Khi nhấn "Lưu thông tin" ở màn hình Chi tiết, `WatchlistModel` sẽ được ánh xạ xuống bảng `watchlist` của thư viện `sqflite`.
+| Bảng | Mô tả |
+|---|---|
+| `users` | Tài khoản người dùng (email, password, username, avatar_path) |
+| `watchlist` | Danh sách anime (có `user_id`, `UNIQUE(mal_id, user_id)`) |
+| `notes` | Ghi chú cá nhân cho anime |
+| `watch_history` | Lịch sử hành động |
 
 ---
 
-## 🚀 Hướng dẫn cấu hình và chạy dự án
+## ⚙️ Cơ chế hoạt động chính
 
-**Bước 1: Cài đặt các Package phụ thuộc**
-Hãy chắc chắn bạn đã cài đặt Flutter SDK >= 3.19. Mở terminal tại thư mục gốc của dự án:
+1. **Thông báo tập mới (3 cấp độ):**
+   - Khi mở app → `TrackingService.checkForUpdates()`
+   - Khi resume từ background → `WidgetsBindingObserver.didChangeAppLifecycleState`
+   - Khi app đóng hoàn toàn → `WorkManager` gọi `BackgroundService._runEpisodeCheck()` mỗi 12h (chỉ khi có mạng và pin không yếu)
+
+2. **Phân tách dữ liệu theo tài khoản:**
+   - `WatchlistNotifier` đọc `userId` từ `authProvider`, lọc tất cả queries theo `WHERE user_id = ?`
+   - Đăng nhập/đăng xuất → `ref.invalidate(watchlistProvider)` → UI tự động reload
+
+3. **Chọn avatar từ máy (Android):**
+   - Copy ảnh từ cache tạm → `ApplicationDocumentsDirectory` (vĩnh viễn)
+   - `retrieveLostData()` phục hồi ảnh nếu Android kill app trong lúc mở thư viện ảnh
+
+4. **Debounce tìm kiếm:** 500ms sau khi ngừng gõ mới gọi API — bảo vệ Rate Limit (3 req/s)
+
+---
+
+## 🚀 Hướng dẫn chạy dự án
+
+**Yêu cầu:** Flutter SDK >= 3.19, Android SDK (minSdk 21)
+
 ```bash
+# Bước 1: Cài đặt dependencies
 flutter pub get
-```
 
-**Bước 2: Cấu hình Jikan API**
-Mặc định dự án đang sử dụng Jikan API v4 miễn phí. Bạn có thể thay đổi Base URL nếu muốn tự host API tại:
-`lib/core/constants/api_constants.dart`
-
-**Bước 3: Chạy ứng dụng**
-Mở Emulator (Android/iOS) hoặc kết nối thiết bị thật:
-```bash
+# Bước 2: Chạy trên thiết bị/emulator
 flutter run
-```
 
-**Bước 4: Build file cài đặt (APK)**
-Để tạo file ứng dụng Android nhẹ và tối ưu nhất:
-```bash
+# Bước 3: Build APK release
 flutter build apk --release
 ```
+
+File APK output: `build/app/outputs/flutter-apk/app-release.apk`
+
+---
+
+## 🔔 Quyền Android cần thiết
+
+| Quyền | Mục đích |
+|---|---|
+| `INTERNET` | Kết nối Jikan API |
+| `READ_EXTERNAL_STORAGE` | Đọc ảnh (Android ≤ 12) |
+| `WRITE_EXTERNAL_STORAGE` | Ghi ảnh (Android ≤ 9) |
+| `READ_MEDIA_IMAGES` | Đọc ảnh (Android ≥ 13) |
+| `POST_NOTIFICATIONS` | Gửi thông báo (Android ≥ 13) |
+
+---
+
+## 📡 API
+
+Dự án sử dụng **Jikan API v4** (miễn phí, không cần API key):
+- Base URL: `https://api.jikan.moe/v4`
+- Endpoints chính: `/seasons/now`, `/top/anime`, `/anime/{id}`, `/anime/{id}/episodes`, `/anime?q=...`
+- Thay đổi Base URL tại: `lib/core/constants/api_constants.dart`

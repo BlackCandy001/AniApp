@@ -80,6 +80,12 @@ class AppLocalizations {
       'invalid_episodes': 'Vui lòng nhập số tập hợp lệ',
       // Edit Profile
       'update_success': 'Cập nhật thông tin thành công',
+      'processing_image': 'Đang xử lý ảnh...',
+      'update_avatar_success': 'Cập nhật Avatar thành công!',
+      'save_error': 'Lỗi lưu:',
+      'process_image_error': 'Lỗi xử lý ảnh:',
+      'no_image_selected': 'Bạn chưa chọn ảnh nào hoặc đã hủy!',
+      'gallery_error': 'Lỗi thư viện ảnh:',
       'edit_profile': 'Cập nhật hồ sơ',
       'avatar': 'Ảnh đại diện',
       'choose_avatar': 'Hoặc chọn Avatar có sẵn:',
@@ -113,6 +119,8 @@ class AppLocalizations {
       'updates_found': 'Đã tìm thấy cập nhật mới! Kiểm tra thông báo.',
       'no_updates': 'Không có cập nhật mới nào.',
       'check_updates': 'Kiểm tra cập nhật',
+      'notify_episode_started': 'Bộ phim đã bắt đầu phát sóng (Tập 1)!',
+      'notify_episode_new': 'Đã có tập {aired}! (Bạn đã lưu: {saved} tập)',
       'empty_list': 'Danh sách trống',
       'deleted': 'Đã xóa',
       'error_occurred': 'Đã xảy ra lỗi:',
@@ -214,6 +222,12 @@ class AppLocalizations {
       'invalid_episodes': 'Please enter a valid episode number',
       // Edit Profile
       'update_success': 'Profile updated successfully',
+      'processing_image': 'Processing image...',
+      'update_avatar_success': 'Avatar updated successfully!',
+      'save_error': 'Save error:',
+      'process_image_error': 'Error processing image:',
+      'no_image_selected': 'No image selected or cancelled!',
+      'gallery_error': 'Gallery error:',
       'edit_profile': 'Edit Profile',
       'avatar': 'Avatar',
       'choose_avatar': 'Or choose an available Avatar:',
@@ -247,6 +261,8 @@ class AppLocalizations {
       'updates_found': 'Updates found! Check notifications.',
       'no_updates': 'No new updates.',
       'check_updates': 'Check for updates',
+      'notify_episode_started': 'The series has started airing (Episode 1)!',
+      'notify_episode_new': 'Episode {aired} is out! (You saved: {saved} eps)',
       'empty_list': 'Empty list',
       'deleted': 'Deleted',
       'error_occurred': 'An error occurred:',
@@ -348,6 +364,12 @@ class AppLocalizations {
       'invalid_episodes': '有効なエピソード数を入力してください',
       // Edit Profile
       'update_success': 'プロフィールが更新されました',
+      'processing_image': '画像を処理しています...',
+      'update_avatar_success': 'アバターを更新しました！',
+      'save_error': '保存エラー:',
+      'process_image_error': '画像処理エラー:',
+      'no_image_selected': '画像が選択されていないか、キャンセルされました！',
+      'gallery_error': 'ギャラリーエラー:',
       'edit_profile': 'プロフィール編集',
       'avatar': 'アバター',
       'choose_avatar': 'または利用可能なアバターを選択:',
@@ -381,6 +403,8 @@ class AppLocalizations {
       'updates_found': '更新が見つかりました！通知を確認してください。',
       'no_updates': '新しい更新はありません。',
       'check_updates': '更新を確認',
+      'notify_episode_started': 'シリーズの放送が始まりました（第1話）！',
+      'notify_episode_new': '第{aired}話が放送されました！（保存済み: {saved}話）',
       'empty_list': 'リストが空です',
       'deleted': '削除しました',
       'error_occurred': 'エラーが発生しました:',
@@ -412,7 +436,7 @@ class AppLocalizations {
     if (_localizedValues.containsKey(langCode) && _localizedValues[langCode]!.containsKey(key)) {
       return _localizedValues[langCode]![key]!;
     }
-    // Fallback to Vietnamese if not found
-    return _localizedValues['vi']?[key] ?? key;
+    // Fallback to English if not found
+    return _localizedValues['en']?[key] ?? key;
   }
 }

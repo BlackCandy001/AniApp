@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../data/models/user_model.dart';
 import '../../../../data/local/database_helper.dart';
+import '../../mylist/presentation/mylist_providers.dart';
 
 /// Provider kiểm tra trạng thái khởi tạo xác thực (dùng cho redirect guard trong GoRouter).
 final authInitProvider = StateProvider<bool>((ref) => false);
@@ -58,6 +59,8 @@ class AuthNotifier extends StateNotifier<UserModel?> {
         state = user;
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('logged_in_user_id', user.id!);
+        // Reload watchlist theo tài khoản mới đăng nhập
+        ref.invalidate(watchlistProvider);
         return null; // Success
       } else {
         return 'Email hoặc mật khẩu không chính xác';
@@ -106,6 +109,8 @@ class AuthNotifier extends StateNotifier<UserModel?> {
     state = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('logged_in_user_id');
+    // Reload watchlist về trạng thái rỗng (chế độ khách)
+    ref.invalidate(watchlistProvider);
   }
 
   Future<String?> updateProfileWithPasswordCheck({
