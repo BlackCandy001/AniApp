@@ -166,7 +166,7 @@ class _HoverableSuggestionTileState extends State<_HoverableSuggestionTile> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         color: _isHovered ? Theme.of(context).primaryColor.withValues(alpha: 0.1) : Colors.transparent,
-        transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
+        transform: Matrix4.diagonal3Values(_isHovered ? 1.02 : 1.0, _isHovered ? 1.02 : 1.0, 1.0),
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: ClipRRect(
@@ -254,7 +254,7 @@ class _HoverableSearchCardState extends State<_HoverableSearchCard> {
           duration: const Duration(milliseconds: 200),
           width: 110,
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
+          transform: Matrix4.diagonal3Values(_isHovered ? 1.05 : 1.0, _isHovered ? 1.05 : 1.0, 1.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

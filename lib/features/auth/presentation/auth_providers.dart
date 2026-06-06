@@ -147,6 +147,7 @@ class AuthNotifier extends StateNotifier<UserModel?> {
 
     final updatedMap = {
       if (newUsername?.isNotEmpty ?? false) 'username': newUsername,
+      // ignore: use_null_aware_elements
       if (newAvatarPath != null) 'avatar_path': newAvatarPath,
       if (isChangingEmail) 'email': newEmail,
       if (isChangingPassword) 'password': newPassword,

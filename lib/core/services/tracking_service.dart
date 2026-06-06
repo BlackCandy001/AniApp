@@ -46,9 +46,6 @@ class TrackingService {
 
       for (var item in watchlist) {
         try {
-          // Gọi API để lấy thông tin mới nhất
-          final latestAnime = await _apiService.getAnimeDetails(item.malId);
-          
           // Dùng API đúng để đếm số tập đã phát thực tế
           final airedCount = await _apiService.getAiredEpisodesCount(item.malId);
 

@@ -25,8 +25,22 @@ class HomeScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
       ),
       extendBodyBehindAppBar: true,
-      body: SingleChildScrollView(
-        child: Column(
+      body: RefreshIndicator(
+        edgeOffset: MediaQuery.of(context).padding.top + kToolbarHeight,
+        onRefresh: () async {
+          ref.invalidate(seasonsNowProvider);
+          ref.invalidate(topAnimeProvider);
+          ref.invalidate(seasonsUpcomingProvider);
+          
+          await Future.wait([
+            ref.read(seasonsNowProvider.future).catchError((_) => <AnimeModel>[]),
+            ref.read(topAnimeProvider.future).catchError((_) => <AnimeModel>[]),
+            ref.read(seasonsUpcomingProvider.future).catchError((_) => <AnimeModel>[]),
+          ]);
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeroCarousel(seasonsNowAsync),
@@ -42,6 +56,7 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 32),
           ],
         ),
+      ),
       ),
     );
   }
@@ -266,7 +281,7 @@ class _AnimeCardWidgetState extends State<_AnimeCardWidget> {
           duration: const Duration(milliseconds: 200),
           width: 140, // Increased width
           margin: const EdgeInsets.only(right: 16, bottom: 8, top: 8), // More spacing
-          transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
+          transform: Matrix4.diagonal3Values(_isHovered ? 1.05 : 1.0, _isHovered ? 1.05 : 1.0, 1.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

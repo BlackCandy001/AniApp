@@ -115,7 +115,7 @@ class _UpdateWatchlistBottomSheetState extends ConsumerState<UpdateWatchlistBott
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _status,
+                initialValue: _status,
                 decoration: InputDecoration(labelText: AppLocalizations.get(currentLang, 'status_label'), border: const OutlineInputBorder()),
                 items: [
                   DropdownMenuItem(value: 'watching', child: Text(AppLocalizations.get(currentLang, 'status_watching'))),

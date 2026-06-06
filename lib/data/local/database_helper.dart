@@ -77,7 +77,7 @@ class DatabaseHelper {
           UNIQUE(mal_id, user_id)
         )
       ''');
-      // Copy dữ liệu cũ sang bảng mới, gán user_id = 0 (không xác định)
+      // Copy dữ liệu cũ sang bảng mới, gán user_id = 0
       await db.execute('''
         INSERT INTO watchlist_new
           (user_id, mal_id, title, title_japanese, poster_url, status,
