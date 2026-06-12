@@ -134,6 +134,9 @@ class InfoScreen extends ConsumerWidget {
 
   ImageProvider? _getAvatarImage(String? avatarPath) {
     if (avatarPath == null || avatarPath.isEmpty) return null;
+    if (avatarPath.startsWith('assets/images/avatars/ava') && avatarPath.endsWith('.jpg')) {
+      avatarPath = 'assets/images/avatars/avatar.jpg';
+    }
     if (avatarPath.startsWith('http')) {
       return NetworkImage(avatarPath);
     } else if (avatarPath.startsWith('assets/')) {

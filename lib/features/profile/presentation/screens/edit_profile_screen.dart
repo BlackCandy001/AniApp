@@ -30,10 +30,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _isLoading = false;
 
   final List<String> _availableAvatars = [
-    'assets/images/avatars/ava1.jpg',
-    'assets/images/avatars/ava2.jpg',
-    'assets/images/avatars/ava3.jpg',
-    'assets/images/avatars/ava4.jpg',
+    'assets/images/avatars/avatar.jpg',
   ];
 
   @override
@@ -44,6 +41,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _usernameController.text = user.username;
       _emailController.text = user.email;
       _selectedAvatar = user.avatarPath;
+      if (_selectedAvatar != null &&
+          _selectedAvatar!.startsWith('assets/images/avatars/ava') &&
+          _selectedAvatar!.endsWith('.jpg')) {
+        _selectedAvatar = 'assets/images/avatars/avatar.jpg';
+      }
     }
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -153,6 +155,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   ImageProvider _getAvatarImage(String avatarPath) {
+    if (avatarPath.startsWith('assets/images/avatars/ava') && avatarPath.endsWith('.jpg')) {
+      avatarPath = 'assets/images/avatars/avatar.jpg';
+    }
     if (avatarPath.startsWith('http')) {
       return NetworkImage(avatarPath);
     } else if (avatarPath.startsWith('assets/')) {
@@ -178,6 +183,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         if (_selectedAvatar == null || _selectedAvatar!.isEmpty) {
           setState(() {
             _selectedAvatar = next.avatarPath;
+            if (_selectedAvatar != null &&
+                _selectedAvatar!.startsWith('assets/images/avatars/ava') &&
+                _selectedAvatar!.endsWith('.jpg')) {
+              _selectedAvatar = 'assets/images/avatars/avatar.jpg';
+            }
           });
         }
       }
